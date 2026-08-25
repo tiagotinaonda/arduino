@@ -1,0 +1,75 @@
+#include <Arduino.h>
+#include <U8g2lib.h>
+#include <Wire.h>
+
+U8G2_SSD1306_72X40_ER_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 6, /* data=*/ 5);
+
+// Pino do sensor de luz (Certifique-se de usar um pino ADC)
+const int pinoLDR = 0; // GPIO 0 (A0 no ESP32-C3 Super Mini)
+
+void faceFeliz(bool piscando);
+void faceNeutro();
+void faceTriste();
+void faceSurpreso();
+
+void setup() {
+  Wire.begin(5, 6); 
+  u8g2.begin();
+  pinMode(pinoLDR, INPUT);
+}
+
+void loop() {
+  unsigned long tempoAtual = millis();
+  
+  // Lê o valor da luz (0 a 4095 no ESP32)
+  int leituraLDR = analogRead(pinoLDR); 
+
+  u8g2.clearBuffer(); 
+
+  // Decide a expressão baseado na quantidade de luz
+  if (leituraLDR < 800) {
+    // Ambiente Escuro -> Fica triste/com sono
+    faceTriste();
+  } 
+  else if (leituraLDR >= 800 && leituraLDR < 2800) {
+    // Ambiente com luz normal -> Fica feliz e pisca os olhos
+    faceFeliz((tempoAtual % 2500) < 250); 
+  } 
+  else {
+    // Luz muito forte (Lanterna direto nele) -> Fica surpreso
+    faceSurpreso();
+  }
+
+  u8g2.sendBuffer(); 
+  delay(50); 
+}
+
+// === Suas funções de desenho (faceFeliz, faceNeutro, etc.) continuam iguais aqui embaixo ===
+void faceFeliz(bool piscando) {
+  if (piscando) {
+    u8g2.drawHLine(17, 16, 11); u8g2.drawHLine(17, 17, 11);
+    u8g2.drawHLine(45, 16, 11); u8g2.drawHLine(45, 17, 11);
+  } else {
+    u8g2.drawFilledEllipse(22, 16, 5, 5, U8G2_DRAW_UPPER_RIGHT | U8G2_DRAW_UPPER_LEFT);
+    u8g2.drawHLine(17, 16, 11);
+    u8g2.drawFilledEllipse(50, 16, 5, 5, U8G2_DRAW_UPPER_RIGHT | U8G2_DRAW_UPPER_LEFT);
+    u8g2.drawHLine(45, 16, 11);
+  }
+  u8g2.drawFilledEllipse(36, 22, 3, 3, U8G2_DRAW_LOWER_RIGHT | U8G2_DRAW_LOWER_LEFT);
+  u8g2.drawHLine(33, 22, 7);
+}
+void faceNeutro() {
+  u8g2.drawDisc(22, 16, 4); u8g2.drawDisc(50, 16, 4);
+  u8g2.drawHLine(33, 23, 7);
+}
+void faceTriste() {
+  u8g2.drawFilledEllipse(22, 16, 5, 5, U8G2_DRAW_LOWER_RIGHT | U8G2_DRAW_LOWER_LEFT);
+  u8g2.drawHLine(17, 16, 11);
+  u8g2.drawFilledEllipse(50, 16, 5, 5, U8G2_DRAW_LOWER_RIGHT | U8G2_DRAW_LOWER_LEFT);
+  u8g2.drawHLine(45, 16, 11);
+  u8g2.drawCircle(36, 27, 4, U8G2_DRAW_UPPER_RIGHT | U8G2_DRAW_UPPER_LEFT);
+}
+void faceSurpreso() {
+  u8g2.drawDisc(22, 15, 5); u8g2.drawDisc(50, 15, 5);
+  u8g2.drawCircle(36, 24, 3);
+}
