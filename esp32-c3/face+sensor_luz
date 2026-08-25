@@ -1,0 +1,83 @@
+#include <Arduino.h>
+#include <U8g2lib.h>
+#include <Wire.h>
+
+// Sensor conectado na GPIO 1 (P1) e no GND (GD)
+const int PINO_SENSOR = 1;
+
+// Média dinâmica para adaptação automática de iluminação
+float mediaLuz = 2500.0;
+const float fatorSuavizacao = 0.05; 
+
+U8G2_SSD1306_72X40_ER_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ 6, /* data=*/ 5);
+
+void faceFeliz(bool piscando);
+void faceTriste(bool piscando);
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(5, 6); 
+  u8g2.begin();
+  
+  pinMode(PINO_SENSOR, INPUT);
+  analogSetAttenuation(ADC_11db);
+}
+
+void loop() {
+  unsigned long tempoAtual = millis();
+  u8g2.clearBuffer(); 
+
+  // --- FILTRO DE ESTABILIZAÇÃO (Evita leituras doidas) ---
+  long somaLeituras = 0;
+  for (int i = 0; i < 10; i++) {
+    somaLeituras += analogRead(PINO_SENSOR);
+    delayMicroseconds(50);
+  }
+  int valorLido = somaLeituras / 10;
+  
+  // Atualiza a média de iluminação da sala em tempo real
+  mediaLuz = (valorLido * fatorSuavizacao) + (mediaLuz * (1.0 - fatorSuavizacao));
+
+  // Piscada automática natural e calma de 200ms a cada 3.5 segundos
+  bool piscadaAutomatica = (tempoAtual % 3500) < 4000;
+
+  // Se o valor cair consideravelmente abaixo da média, é luz forte
+  if (valorLido < (mediaLuz - 300)) {
+    faceFeliz(piscadaAutomatica); // Muita Luz -> Feliz!
+  } 
+  else {
+    faceTriste(piscadaAutomatica); // Pouca Luz -> Triste!
+  }
+
+  u8g2.sendBuffer(); 
+  delay(60); // Ritmo confortável para suavizar o display
+}
+
+// ==================== EXPRESSÕES DO ROBÔ ====================
+
+void faceFeliz(bool piscando) {
+  if (piscando) {
+    u8g2.drawHLine(17, 16, 11); u8g2.drawHLine(17, 17, 11);
+    u8g2.drawHLine(45, 16, 11); u8g2.drawHLine(45, 17, 11);
+  } else {
+    u8g2.drawFilledEllipse(22, 16, 5, 5, U8G2_DRAW_UPPER_RIGHT | U8G2_DRAW_UPPER_LEFT);
+    u8g2.drawHLine(17, 16, 11);
+    u8g2.drawFilledEllipse(50, 16, 5, 5, U8G2_DRAW_UPPER_RIGHT | U8G2_DRAW_UPPER_LEFT);
+    u8g2.drawHLine(45, 16, 11);
+  }
+  u8g2.drawFilledEllipse(36, 22, 3, 3, U8G2_DRAW_LOWER_RIGHT | U8G2_DRAW_LOWER_LEFT);
+  u8g2.drawHLine(33, 22, 7);
+}
+
+void faceTriste(bool piscando) {
+  if (piscando) {
+    u8g2.drawHLine(17, 16, 11); u8g2.drawHLine(17, 17, 11);
+    u8g2.drawHLine(45, 16, 11); u8g2.drawHLine(45, 17, 11);
+  } else {
+    u8g2.drawFilledEllipse(22, 16, 5, 5, U8G2_DRAW_LOWER_RIGHT | U8G2_DRAW_LOWER_LEFT);
+    u8g2.drawHLine(17, 16, 11);
+    u8g2.drawFilledEllipse(50, 16, 5, 5, U8G2_DRAW_LOWER_RIGHT | U8G2_DRAW_LOWER_LEFT);
+    u8g2.drawHLine(45, 16, 11);
+  }
+  u8g2.drawCircle(36, 27, 4, U8G2_DRAW_UPPER_RIGHT | U8G2_DRAW_UPPER_LEFT);
+}
