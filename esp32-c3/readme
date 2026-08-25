@@ -1,0 +1,6 @@
+1. O Robô "Vampiro" (Sensor de Luz LDR)Esta é exatamente a evolução direta da sua ideia. 
+Você usa um sensor LDR (resistor dependente de luz) para ditar o humor dele.
+💡 Como funciona: Ele acorda feliz e piscando se o quarto estiver iluminado. Se você apagar as luzes, ele fica com sono/triste (face triste). 
+Se uma lanterna apontar direto para ele, ele toma um susto e fica surpreso.
+🔌 O que você precisa: 1 Sensor LDR + 1 Resistor de 10kΩ (ou um módulo LDR pronto).
+📌 Porta recomendada no ESP32-C3: Pino A0 (GPIO 0) ou A1 (GPIO 1) para leitura analógica da luz.
